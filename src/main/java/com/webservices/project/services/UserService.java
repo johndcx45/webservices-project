@@ -2,7 +2,11 @@ package com.webservices.project.services;
 
 import com.webservices.project.entities.User;
 import com.webservices.project.repositories.UserRepository;
+import com.webservices.project.services.exceptions.DatabaseException;
+import com.webservices.project.services.exceptions.ResourceNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
@@ -20,7 +24,7 @@ public class UserService {
 
     public User findById(Long id){
        Optional<User> obj = repository.findById(id);
-       return obj.get();
+       return obj.orElseThrow(() -> new ResourceNotFoundException(id));
     }
 
 
@@ -29,7 +33,14 @@ public class UserService {
     }
 
     public void deleteUser(Long id){
-        repository.delete(repository.getOne(id));
+        try {
+            repository.deleteById(id);
+        }catch(EmptyResultDataAccessException e){
+            e.printStackTrace();
+            throw new ResourceNotFoundException(id);
+        }catch(DataIntegrityViolationException e){
+            throw new DatabaseException(e.getMessage());
+        }
     }
 
     public User updateUser(Long id, User obj){
